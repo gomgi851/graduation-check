@@ -34,9 +34,12 @@ function summary(){gpaSummary();const {total,goal:totalGoal,box:totalBox}=totalS
 function categoryLabel(cat){return ({'공통교양':'공교','일반교양':'일교'})[cat]||cat}
 function categoryBadge(cat){return el('span',categoryLabel(cat),'categorybadge badge-'+cats.indexOf(cat))}
 function courseCard(c){
- const item=el('div',undefined,'course category-'+cats.indexOf(c.category)+(c.seasonal?' seasonalcourse':'')),name=el('div',c.name,'coursename');name.title=c.name;item.append(name);
- const bottom=el('div',undefined,'coursebottom'),meta=el('div',undefined,'coursemeta');meta.append(categoryBadge(c.category),el('span',c.credits,'coursecredits'),el('span',c.grade,'coursegrade'));bottom.append(meta);
- const actions=el('div',undefined,'actions'),edit=el('button','수정'),del=el('button','삭제');
+ const item=el('div',undefined,'course category-'+cats.indexOf(c.category)+(c.seasonal?' seasonalcourse':'')),name=el('div',c.name,'coursename');name.title=c.name+' · '+categoryLabel(c.category)+(c.seasonal?' · 계절':'');item.append(name);
+ const bottom=el('div',undefined,'coursebottom'),meta=el('div',undefined,'coursemeta');meta.append(el('span',c.credits,'coursecredits'),el('span',c.grade,'coursegrade'));bottom.append(meta);
+ const actions=el('div',undefined,'actions'),edit=el('button'),del=el('button');
+ edit.title='수정';del.title='삭제';
+ edit.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z"/></svg>';
+ del.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
  edit.setAttribute('aria-label',c.name+' 수정');del.setAttribute('aria-label',c.name+' 삭제');
  edit.onclick=()=>{editing=c.id;setSeasonal(c.seasonal===true);['name','category','credits','grade','year','semester'].forEach(k=>$(k).value=c[k]??'');$('formtitle').textContent='과목 수정';$('submit').textContent='변경 저장하기';$('cancel').hidden=false;$('name').focus()};
  del.onclick=()=>{if(!confirm(`‘${c.name}’ 과목을 삭제할까요?`))return;state.courses=state.courses.filter(x=>x.id!==c.id);if(editing===c.id)reset();save();render()};
