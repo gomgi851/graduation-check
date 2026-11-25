@@ -4,7 +4,7 @@ function valid(s){return s&&(s.totalGoal===undefined||s.totalGoal===null||(Numbe
 function normalize(s){return {sortMode:["category","name","registered"].includes(s.sortMode)?s.sortMode:"category",totalGoal:s.totalGoal??null,goals:Object.fromEntries(cats.map(c=>[c,s.goals[c]??null])),courses:s.courses.map(c=>({...c,seasonal:c.seasonal??false,year:c.year??null,semester:c.semester??null}))}}
 try{const s=JSON.parse(localStorage.getItem(key));if(valid(s))state=normalize(s)}catch{}
 function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>$('toast').style.display='none',2600)}
-function save(){try{localStorage.setItem(key,JSON.stringify(state));$('saved').textContent='이 브라우저에 자동 저장'}catch{$('saved').textContent='저장 실패 · 기록을 내보내세요';toast('저장 공간을 확인하거나 기록을 내보내세요.')}}
+function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch{toast('저장 공간을 확인하거나 기록을 내보내세요.')}}
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function earned(cat){return state.courses.filter(c=>c.category===cat&&!['F','NP'].includes(c.grade)).reduce((n,c)=>n+c.credits,0)}
 function gpa(category=null){
