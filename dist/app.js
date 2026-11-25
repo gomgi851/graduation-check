@@ -7,6 +7,21 @@ function toast(t){$('toast').textContent=t;$('toast').style.display='block';clea
 function save(){try{localStorage.setItem(key,JSON.stringify(state));$('saved').textContent='이 브라우저에 자동 저장'}catch{$('saved').textContent='저장 실패 · 기록을 내보내세요';toast('저장 공간을 확인하거나 기록을 내보내세요.')}}
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function earned(cat){return state.courses.filter(c=>c.category===cat&&!['F','NP'].includes(c.grade)).reduce((n,c)=>n+c.credits,0)}
+function gpa(category=null){
+ const points={'A+':4.5,A:4,'B+':3.5,B:3,'C+':2.5,C:2,'D+':1.5,D:1,F:0};
+ const rows=state.courses.filter(c=>(category===null||c.category===category)&&Object.hasOwn(points,c.grade));
+ const credits=rows.reduce((n,c)=>n+c.credits,0);
+ return credits?rows.reduce((n,c)=>n+c.credits*points[c.grade],0)/credits:null
+}
+function gpaSummary(){
+ const area=$('gpaoverview');area.replaceChildren();
+ for(const [label,category] of [['전체 평점',null],['전공 평점','전공']]){
+  const group=el('div',undefined,'gpaitem'),value=gpa(category),number=el('div',undefined,'gpanumber');
+  number.append(el('strong',value===null?'—':value.toFixed(2)),el('span',' / 4.5'));
+  group.append(el('h2',label),number);area.append(group)
+ }
+ area.append(el('p','학점 가중평균 · A+ 4.5, A 4.0, B+ 3.5, B 3.0, C+ 2.5, C 2.0, D+ 1.5, D 1.0, F 0 · P·NP 제외','gpanote'))
+}
 function totalSummary(){
  const total=cats.reduce((n,cat)=>n+earned(cat),0),goal=state.totalGoal,area=$('totaloverview');area.replaceChildren();
  const text=el('div');text.append(el('h2','총 졸업 학점'),el('p',goal===null?'총 졸업 요구 학점을 설정하세요.':total>=goal?'총 학점 기준 충족':`${goal-total}학점 더 이수해야 합니다.`));
@@ -14,7 +29,7 @@ function totalSummary(){
  const line=el('div',undefined,'goal'),label=el('label','총 필요 학점'),input=el('input');label.htmlFor='totalgoal';label.style.margin='0';Object.assign(input,{id:'totalgoal',type:'number',min:'0',max:'600',step:'0.5',value:goal===null?'':goal,placeholder:'설정'});
  input.onchange=()=>{if(!input.checkValidity()){input.reportValidity();return}state.totalGoal=input.value===''?null:Number(input.value);save();summary()};line.append(label,input);area.append(text,number,line);return {total,goal}
 }
-function summary(){const {total,goal:totalGoal}=totalSummary();const area=$('overview');area.replaceChildren();let allSet=true,allDone=true;cats.forEach(cat=>{const goal=state.goals[cat],n=earned(cat),set=goal!==null;allSet&&=set;allDone&&=set&&n>=goal;const box=el('div',undefined,'category'),head=el('div',undefined,'cathead');head.append(el('span',cat),el('span',!set?'기준 미설정':n>=goal?'충족':`${goal-n}학점 남음`,'status'));const num=el('div',undefined,'numbers');num.append(el('span',n),el('small',` / ${set?goal:'—'} 학점`));const bar=el('div',undefined,'bar'),fill=el('div');fill.style.width=(set?(goal===0?100:Math.min(100,n/goal*100)):0)+'%';bar.append(fill);const line=el('div',undefined,'goal'),label=el('label','필요 학점');label.htmlFor='goal-'+cats.indexOf(cat);label.style.margin='0';const input=el('input');Object.assign(input,{id:label.htmlFor,type:'number',min:'0',max:'300',step:'0.5',value:set?goal:'',placeholder:'설정'});input.onchange=()=>{if(!input.checkValidity()){input.reportValidity();return}state.goals[cat]=input.value===''?null:Number(input.value);save();summary()};line.append(label,input);box.append(head,num,bar,line);area.append(box)});$('overall').textContent=(!allSet||totalGoal===null)?'기준 설정 필요':(allDone&&total>=totalGoal)?'전체 학점 기준 충족':'학점 이수 중'}
+function summary(){gpaSummary();const {total,goal:totalGoal}=totalSummary();const area=$('overview');area.replaceChildren();let allSet=true,allDone=true;cats.forEach(cat=>{const goal=state.goals[cat],n=earned(cat),set=goal!==null;allSet&&=set;allDone&&=set&&n>=goal;const box=el('div',undefined,'category'),head=el('div',undefined,'cathead');head.append(el('span',cat),el('span',!set?'기준 미설정':n>=goal?'충족':`${goal-n}학점 남음`,'status'));const num=el('div',undefined,'numbers');num.append(el('span',n),el('small',` / ${set?goal:'—'} 학점`));const bar=el('div',undefined,'bar'),fill=el('div');fill.style.width=(set?(goal===0?100:Math.min(100,n/goal*100)):0)+'%';bar.append(fill);const line=el('div',undefined,'goal'),label=el('label','필요 학점');label.htmlFor='goal-'+cats.indexOf(cat);label.style.margin='0';const input=el('input');Object.assign(input,{id:label.htmlFor,type:'number',min:'0',max:'300',step:'0.5',value:set?goal:'',placeholder:'설정'});input.onchange=()=>{if(!input.checkValidity()){input.reportValidity();return}state.goals[cat]=input.value===''?null:Number(input.value);save();summary()};line.append(label,input);box.append(head,num,bar,line);area.append(box)});$('overall').textContent=(!allSet||totalGoal===null)?'기준 설정 필요':(allDone&&total>=totalGoal)?'전체 학점 기준 충족':'학점 이수 중'}
 function courseCard(c){
  const item=el('div',undefined,'course'),name=el('div',c.name,'coursename');name.title=c.name;item.append(name);
  const bottom=el('div',undefined,'coursebottom');bottom.append(el('span',`${c.category} · ${c.credits}학점 · ${c.grade}`,'coursemeta'));
