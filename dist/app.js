@@ -1,7 +1,7 @@
 const cats=['공통교양','일반교양','MSC','전공'],grades=['A+','A','B+','B','C+','C','D+','D','F','P','NP'],key='graduation-check-v1';
-const $=id=>document.getElementById(id);let state={totalGoal:null,goals:Object.fromEntries(cats.map(c=>[c,null])),courses:[]},filter='전체',editing=null;
+const $=id=>document.getElementById(id);let state={sortMode:"category",totalGoal:null,goals:Object.fromEntries(cats.map(c=>[c,null])),courses:[]},filter='전체',editing=null;
 function valid(s){return s&&(s.totalGoal===undefined||s.totalGoal===null||(Number.isFinite(s.totalGoal)&&s.totalGoal>=0&&s.totalGoal<=600))&&s.goals&&cats.every(c=>(c==='일반교양'&&s.goals[c]===undefined)||s.goals[c]===null||(Number.isFinite(s.goals[c])&&s.goals[c]>=0&&s.goals[c]<=300))&&Array.isArray(s.courses)&&s.courses.every(c=>typeof c.id==='string'&&typeof c.name==='string'&&c.name.trim()&&c.name.length<=100&&cats.includes(c.category)&&grades.includes(c.grade)&&Number.isFinite(c.credits)&&c.credits>0&&c.credits<=30)&&s.courses.every(c=>(c.year===undefined||c.year===null||(Number.isInteger(c.year)&&c.year>=1&&c.year<=6))&&(c.semester===undefined||c.semester===null||[1,2].includes(c.semester)))&&new Set(s.courses.map(c=>c.id)).size===s.courses.length}
-function normalize(s){return {totalGoal:s.totalGoal??null,goals:Object.fromEntries(cats.map(c=>[c,s.goals[c]??null])),courses:s.courses.map(c=>({...c,year:c.year??null,semester:c.semester??null}))}}
+function normalize(s){return {sortMode:["category","name","registered"].includes(s.sortMode)?s.sortMode:"category",totalGoal:s.totalGoal??null,goals:Object.fromEntries(cats.map(c=>[c,s.goals[c]??null])),courses:s.courses.map(c=>({...c,year:c.year??null,semester:c.semester??null}))}}
 try{const s=JSON.parse(localStorage.getItem(key));if(valid(s))state=normalize(s)}catch{}
 function toast(t){$('toast').textContent=t;$('toast').style.display='block';clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>$('toast').style.display='none',2600)}
 function save(){try{localStorage.setItem(key,JSON.stringify(state));$('saved').textContent='이 브라우저에 자동 저장'}catch{$('saved').textContent='저장 실패 · 기록을 내보내세요';toast('저장 공간을 확인하거나 기록을 내보내세요.')}}
@@ -47,10 +47,16 @@ function semesterPanel(year,semester,rows){
  if(rows.length)rows.forEach(c=>panel.append(courseCard(c)));else panel.append(el('div',filter==='전체'?'등록한 과목 없음':'해당 분류의 과목 없음','semesterempty'));
  const add=el('button','+ 과목 추가','semesteradd');add.setAttribute('aria-label',`${year}학년 ${semester}학기 과목 추가`);add.onclick=()=>{reset();$('year').value=year;$('semester').value=semester;if(filter!=='전체')$('category').value=filter;$('name').focus()};panel.append(add);return panel
 }
+function sortCourses(rows,mode=state.sortMode){
+ const copy=[...rows],order=['전공','MSC','공통교양','일반교양'];
+ if(mode==='category')copy.sort((a,b)=>order.indexOf(a.category)-order.indexOf(b.category));
+ else if(mode==='name')copy.sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+ return copy
+}
 function render(){
- summary();$('count').textContent=state.courses.length;$('filters').replaceChildren();
+ summary();$('sort').value=state.sortMode;$('count').textContent=state.courses.length;$('filters').replaceChildren();
  ['전체',...cats].forEach(cat=>{const b=el('button',categoryLabel(cat),'filter'+(filter===cat?' active':''));b.setAttribute('aria-pressed',filter===cat);b.onclick=()=>{filter=cat;render()};$('filters').append(b)});
- const rows=state.courses.filter(c=>filter==='전체'||c.category===filter),area=$('yeargroups');area.replaceChildren();
+ const rows=sortCourses(state.courses.filter(c=>filter==='전체'||c.category===filter)),area=$('yeargroups');area.replaceChildren();
  const maxYear=Math.max(4,...state.courses.map(c=>c.year||0));
  for(let year=1;year<=maxYear;year++){
   const group=el('section',undefined,'yearblock'),head=el('div',undefined,'yearheading'),yearRows=rows.filter(c=>c.year===year&&c.semester);
@@ -61,6 +67,7 @@ function render(){
  if(unassigned.length){const section=el('section',undefined,'unassigned');section.append(el('h2','학기 미지정'),el('p','기존 과목의 수강 학년·학기를 수정에서 지정하세요.'));const box=el('div',undefined,'semester');unassigned.forEach(c=>box.append(courseCard(c)));section.append(box);area.append(section)}
 }
 function reset(keepFields=false){editing=null;if(keepFields===true){$('name').value='';$('name').setCustomValidity('')}else $('courseform').reset();$('formtitle').textContent='과목 추가';$('submit').textContent='과목 추가하기';$('cancel').hidden=true}
+$('sort').onchange=()=>{state.sortMode=$('sort').value;save();render()};
 grades.forEach(g=>$('grade').append(el('option',g)));$('cancel').onclick=reset;
 $('courseform').onsubmit=e=>{e.preventDefault();const name=$('name').value.trim();if(!name){$('name').setCustomValidity('과목명을 입력하세요.');$('name').reportValidity();return}const c={id:editing||crypto.randomUUID(),name,category:$('category').value,credits:Number($('credits').value),year:$('year').value?Number($('year').value):null,semester:$('semester').value?Number($('semester').value):null,grade:$('grade').value};if(editing)state.courses=state.courses.map(x=>x.id===editing?c:x);else state.courses.push(c);save();reset(true);render();toast('과목을 저장했습니다.');$('name').focus()};$('name').oninput=()=>$('name').setCustomValidity('');
 $('export').onclick=()=>{const a=el('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download='졸업체크-기록.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
