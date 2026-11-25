@@ -20,7 +20,6 @@ function gpaSummary(){
   number.append(el('strong',value===null?'—':value.toFixed(2)),el('span',' / 4.5'));
   group.append(el('h2',label),number);area.append(group)
  }
- area.append(el('p','학점 가중평균 · F 포함 · P·NP 제외','gpanote'))
 }
 function totalSummary(){
  const total=cats.reduce((n,cat)=>n+earned(cat),0),goal=state.totalGoal,box=el('div',undefined,'category totalcategory');
