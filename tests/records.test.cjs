@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const vm=require('node:vm');
-const source=readFileSync('dist/app.js','utf8').split("$('sort').onchange=")[0];
+const source=readFileSync('dist/app.js','utf8').split("$('seasonal').onclick=")[0];
 function context(saved=null){const ctx=vm.createContext({document:{getElementById(){}},localStorage:{getItem(){return JSON.stringify(saved)}}});vm.runInContext(source,ctx);return ctx}
 const record={goals:{'공통교양':12,MSC:18,'전공':60},courses:[{id:'old',name:'이전 과목',category:'전공',credits:3,grade:'A+'}]};
 test('이전 기록에 수강 정보가 없어도 학점과 과목을 보존',()=>{const ctx=context(record);assert.equal(vm.runInContext('state.courses[0].year',ctx),null);assert.equal(vm.runInContext('state.courses[0].semester',ctx),null);assert.equal(vm.runInContext("earned('전공')",ctx),3)});
@@ -18,3 +18,5 @@ test('3분류 기존 기록은 보존하고 일반교양 기준만 미설정으�
 test('일반교양은 별도 합산하며 전체 평점에 포함, 전공 평점에서는 제외',()=>{const ctx=context();ctx.payload={...record,goals:{...record.goals,'일반교양':6},courses:[record.courses[0],{...record.courses[0],id:'general',category:'일반교양',grade:'B',credits:3}]};vm.runInContext('state=normalize(payload)',ctx);assert.equal(vm.runInContext('valid(state)',ctx),true);assert.equal(vm.runInContext("earned('일반교양')",ctx),3);assert.equal(vm.runInContext("earned('공통교양')",ctx),0);assert.equal(vm.runInContext('gpa()',ctx),3.75);assert.equal(vm.runInContext("gpa('전공')",ctx),4.5)});
 
 test('분류순으로 색을 모으고 등록순 복원, 정렬은 원본 순서를 보존',()=>{const ctx=context();ctx.payload=['일반교양','전공','공통교양','MSC','전공'].map((category,i)=>({...record.courses[0],id:String(i),category}));assert.equal(vm.runInContext("sortCourses(payload,'category').map(c=>c.category).join(',')",ctx),'전공,전공,MSC,공통교양,일반교양');assert.equal(vm.runInContext("sortCourses(payload,'registered').map(c=>c.id).join(',')",ctx),'0,1,2,3,4');assert.equal(vm.runInContext('payload[0].category',ctx),'일반교양');assert.equal(vm.runInContext('state.sortMode',ctx),'category')});
+
+test('계절학기 여부는 기존 기록에서 false로 복원, 저장 유지 및 학점·평점 영향 없음',()=>{const old=context(record);assert.equal(vm.runInContext('state.courses[0].seasonal',old),false);const saved=structuredClone(record);saved.courses[0].seasonal=true;const ctx=context(saved);assert.equal(vm.runInContext('state.courses[0].seasonal',ctx),true);assert.equal(vm.runInContext("earned('전공')",ctx),3);assert.equal(vm.runInContext('gpa()',ctx),4.5);ctx.payload=structuredClone(saved);ctx.payload.courses[0].seasonal='yes';assert.equal(vm.runInContext('valid(payload)',ctx),false)});
