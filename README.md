@@ -39,3 +39,7 @@ node --test tests/records.test.cjs
 ## 배포
 
 `dist/`를 정적 웹 호스팅에 배포합니다. `.openai/hosting.json`은 기존 Sites 배포 설정입니다.
+
+## 글꼴
+
+네이버 공식 배포 나눔스퀘어 네오 가변 웹폰트를 `dist/fonts/`에 포함합니다. 출처 및 사용 안내는 해당 폴더의 README.txt를 참고하세요.
