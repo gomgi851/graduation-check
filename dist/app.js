@@ -33,7 +33,7 @@ function summary(){gpaSummary();const {total,goal:totalGoal}=totalSummary();cons
 function categoryBadge(cat){return el('span',cat,'categorybadge badge-'+cats.indexOf(cat))}
 function courseCard(c){
  const item=el('div',undefined,'course category-'+cats.indexOf(c.category)),name=el('div',c.name,'coursename');name.title=c.name;item.append(name);
- const bottom=el('div',undefined,'coursebottom'),meta=el('div',undefined,'coursemeta');meta.append(categoryBadge(c.category),el('span',`${c.credits}학점 · ${c.grade}`));bottom.append(meta);
+ const bottom=el('div',undefined,'coursebottom'),meta=el('div',undefined,'coursemeta');meta.append(categoryBadge(c.category),el('span',`${c.credits}학점`,'coursecredits'),el('span',c.grade,'coursegrade'));bottom.append(meta);
  const actions=el('div',undefined,'actions'),edit=el('button','수정'),del=el('button','삭제');
  edit.setAttribute('aria-label',c.name+' 수정');del.setAttribute('aria-label',c.name+' 삭제');
  edit.onclick=()=>{editing=c.id;['name','category','credits','grade','year','semester'].forEach(k=>$(k).value=c[k]??'');$('formtitle').textContent='과목 수정';$('submit').textContent='변경 저장하기';$('cancel').hidden=false;$('name').focus()};
