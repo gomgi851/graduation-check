@@ -30,7 +30,8 @@ function totalSummary(){
  input.onchange=()=>{if(!input.checkValidity()){input.reportValidity();return}state.totalGoal=input.value===''?null:Number(input.value);save();summary()};line.append(label,input);area.append(text,number,line);return {total,goal}
 }
 function summary(){gpaSummary();const {total,goal:totalGoal}=totalSummary();const area=$('overview');area.replaceChildren();let allSet=true,allDone=true;cats.forEach(cat=>{const goal=state.goals[cat],n=earned(cat),set=goal!==null;allSet&&=set;allDone&&=set&&n>=goal;const box=el('div',undefined,'category'),head=el('div',undefined,'cathead');head.append(categoryBadge(cat),el('span',!set?'기준 미설정':n>=goal?'충족':`${goal-n}학점 남음`,'status'));const num=el('div',undefined,'numbers');num.append(el('span',n),el('small',` / ${set?goal:'—'} 학점`));const bar=el('div',undefined,'bar'),fill=el('div');fill.style.width=(set?(goal===0?100:Math.min(100,n/goal*100)):0)+'%';bar.append(fill);const line=el('div',undefined,'goal'),label=el('label','필요 학점');label.htmlFor='goal-'+cats.indexOf(cat);label.style.margin='0';const input=el('input');Object.assign(input,{id:label.htmlFor,type:'number',min:'0',max:'300',step:'0.5',value:set?goal:'',placeholder:'설정'});input.onchange=()=>{if(!input.checkValidity()){input.reportValidity();return}state.goals[cat]=input.value===''?null:Number(input.value);save();summary()};line.append(label,input);box.append(head,num,bar,line);area.append(box)});$('overall').textContent=(!allSet||totalGoal===null)?'기준 설정 필요':(allDone&&total>=totalGoal)?'전체 학점 기준 충족':'학점 이수 중'}
-function categoryBadge(cat){return el('span',cat,'categorybadge badge-'+cats.indexOf(cat))}
+function categoryLabel(cat){return ({'공통교양':'공교','일반교양':'일교'})[cat]||cat}
+function categoryBadge(cat){return el('span',categoryLabel(cat),'categorybadge badge-'+cats.indexOf(cat))}
 function courseCard(c){
  const item=el('div',undefined,'course category-'+cats.indexOf(c.category)),name=el('div',c.name,'coursename');name.title=c.name;item.append(name);
  const bottom=el('div',undefined,'coursebottom'),meta=el('div',undefined,'coursemeta');meta.append(categoryBadge(c.category),el('span',`${c.credits}학점`,'coursecredits'),el('span',c.grade,'coursegrade'));bottom.append(meta);
@@ -48,7 +49,7 @@ function semesterPanel(year,semester,rows){
 }
 function render(){
  summary();$('count').textContent=state.courses.length;$('filters').replaceChildren();
- ['전체',...cats].forEach(cat=>{const b=el('button',cat,'filter'+(filter===cat?' active':''));b.setAttribute('aria-pressed',filter===cat);b.onclick=()=>{filter=cat;render()};$('filters').append(b)});
+ ['전체',...cats].forEach(cat=>{const b=el('button',categoryLabel(cat),'filter'+(filter===cat?' active':''));b.setAttribute('aria-pressed',filter===cat);b.onclick=()=>{filter=cat;render()};$('filters').append(b)});
  const rows=state.courses.filter(c=>filter==='전체'||c.category===filter),area=$('yeargroups');area.replaceChildren();
  const maxYear=Math.max(4,...state.courses.map(c=>c.year||0));
  for(let year=1;year<=maxYear;year++){
